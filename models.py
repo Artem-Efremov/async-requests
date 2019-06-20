@@ -1,3 +1,5 @@
+from timeit import default_timer
+
 class FakeName:
     
     INITIAL_TIME = default_timer()
