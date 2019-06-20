@@ -8,6 +8,9 @@ from timeit import default_timer, timeit
 # Installed libraries
 import requests
 
+# Local libraries
+from models import FakeName
+
 # Exeptions
 from json.decoder import JSONDecodeError
 from requests.exceptions import ConnectionError
@@ -23,34 +26,6 @@ FAILED_LOAD_DELAY = 0.5
 DEFAULT_OUTPUT = 'timed_output_{0}.txt'.format(time.strftime('%Y-%m-%d_%H-%M-%S'))
 
 MOST_COMMON_WORDS_COUNT = 10
-
-
-class FakeName:
-    
-    INITIAL_TIME = default_timer()
-    MINUS_WORDS = ['Miss', 'PhD']
-
-    def __init__(self, start=None, finish=None, fullname=None):
-        self.start_request_time = start
-        self.name_received_time = finish
-        self.fullname = fullname
-        self.retries = 0
-
-    @staticmethod
-    def is_valid_name(name):
-        return (
-            '.' not in name 
-            and name
-            and not name.isupper() 
-            and name not in FakeName.MINUS_WORDS
-        )
-
-    def split_fullname(self):
-        names = self.fullname.split(' ')
-        filtered_names = list(filter(FakeName.is_valid_name, names))
-        if len(filtered_names) != 2:
-            print('INVALID NAME LENGTH:: ', self.fullname, filtered_names)
-        return filtered_names
 
 
 def fetch_fakename(session, url):
