@@ -1,6 +1,7 @@
 # Built-in libraries
 import asyncio
 import time
+import urllib3
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from timeit import default_timer, timeit
@@ -23,7 +24,7 @@ DEFAULT_TIMEOUT = 3
 FAILED_LOAD_RETRIES = 5
 FAILED_LOAD_DELAY = 0.5
 
-DEFAULT_OUTPUT = 'timed_output_{0}.txt'.format(time.strftime('%Y-%m-%d_%H-%M-%S'))
+DEFAULT_OUTPUT = 'outputs/timed_output_{0}.txt'.format(time.strftime('%Y-%m-%d_%H-%M-%S'))
 
 MOST_COMMON_WORDS_COUNT = 10
 
@@ -97,6 +98,7 @@ def main():
 
 
 if __name__ == '__main__':
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     with open(DEFAULT_OUTPUT, 'a') as output:
         elapsed = '{:5.2f}s'.format(
             timeit('main()', 'from __main__ import main', number=1))
