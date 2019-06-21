@@ -11,27 +11,16 @@ import requests
 
 # Local libraries
 from models import FakeName
+import settings
 
 # Exeptions
 from json.decoder import JSONDecodeError
 from requests.exceptions import ConnectionError
 
 
-DEFAULT_REQUESTS_COUNT = 100
-CONCURRENT_REQUESTS_COUNT = 10
-DEFAULT_TIMEOUT = 3
-
-FAILED_LOAD_RETRIES = 5
-FAILED_LOAD_DELAY = 0.5
-
-DEFAULT_OUTPUT = 'outputs/timed_output_{0}.txt'.format(time.strftime('%Y-%m-%d_%H-%M-%S'))
-
-MOST_COMMON_WORDS_COUNT = 10
-
-
 def fetch_fakename(session, url):
     name_obj = FakeName(start=default_timer())
-    for _ in range(int(FAILED_LOAD_RETRIES)): # Restart if request was failed
+    for _ in range(int(settings.FAILED_LOAD_RETRIES)): # Restart if request was failed
         name_obj.retries += 1
         try:
             with session.get(url) as response:
@@ -42,17 +31,17 @@ def fetch_fakename(session, url):
         except (ConnectionError, JSONDecodeError) as e:
             print('FAILED:: {}'.format(e))
         finally:
-            time.sleep(FAILED_LOAD_DELAY)
+            time.sleep(settings.FAILED_LOAD_DELAY)
 
 
 async def get_fakename_asynchronous():
 
     base_url = 'https://api.namefake.com/'
 
-    with ThreadPoolExecutor(max_workers=CONCURRENT_REQUESTS_COUNT) as executor:
+    with ThreadPoolExecutor(max_workers=settings.CONCURRENT_REQUESTS_COUNT) as executor:
         with requests.Session() as session:
             session.verify = False
-            session.timeout = DEFAULT_TIMEOUT
+            session.timeout = settings.DEFAULT_TIMEOUT
             loop = asyncio.get_event_loop()
             tasks = [
                 loop.run_in_executor(
@@ -60,7 +49,7 @@ async def get_fakename_asynchronous():
                     fetch_fakename,
                     *(session, base_url)
                 )
-                for _ in range(DEFAULT_REQUESTS_COUNT)
+                for _ in range(settings.DEFAULT_REQUESTS_COUNT)
             ]
     names_obj_list = list(await asyncio.gather(*tasks))
     process_names(names_obj_list)
@@ -83,9 +72,9 @@ def process_names(names_obj_list):
         fake_names.extend(name_obj.split_fullname())
 
     print('\n' + '='*93, end='\n\n', file=output)
-    print('{} MOST COMMON WORDS'.format(MOST_COMMON_WORDS_COUNT), 
+    print('{} MOST COMMON WORDS'.format(settings.MOST_COMMON_WORDS_COUNT), 
         end='\n\n', file=output)
-    common = Counter(fake_names).most_common(MOST_COMMON_WORDS_COUNT)
+    common = Counter(fake_names).most_common(settings.MOST_COMMON_WORDS_COUNT)
     print("{0:<30} {1:>20}".format("Word", "Count"), file=output)
     for name, count in common:
         print("{0:<30} {1:>20}".format(name, count), file=output)
@@ -98,6 +87,9 @@ def main():
 
 
 if __name__ == '__main__':
+    
+    DEFAULT_OUTPUT = 'outputs/timed_output_{0}.txt'.format(time.strftime('%Y-%m-%d_%H-%M-%S'))
+
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     with open(DEFAULT_OUTPUT, 'a') as output:
         elapsed = '{:5.2f}s'.format(
@@ -105,9 +97,9 @@ if __name__ == '__main__':
         
         format_pat = "{0:<30} {1:>20}"
         resume_tuple = [
-            ("Total names received:", DEFAULT_REQUESTS_COUNT),
-            ("Concurrent request count:", CONCURRENT_REQUESTS_COUNT),
-            ("Most common words count:", MOST_COMMON_WORDS_COUNT), 
+            ("Total names received:", settings.DEFAULT_REQUESTS_COUNT),
+            ("Concurrent request count:", settings.CONCURRENT_REQUESTS_COUNT),
+            ("Most common words count:", settings.MOST_COMMON_WORDS_COUNT), 
             ("Total time elapsed:", elapsed)
         ]
             
