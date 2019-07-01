@@ -48,25 +48,27 @@ def fetch_fakename(session, url):
             time.sleep(settings.FAILED_LOAD_DELAY)
 
 
-async def get_fakename_asynchronous():
+def create_asynchronous_tasks(loop, exec_func, executor=None, *args, **kwargs):
+    return [
+        loop.run_in_executor(
+            executor,
+            exec_func,
+            *args
+        )
+        for _ in range(settings.DEFAULT_REQUESTS_COUNT)
+    ]
 
-    base_url = 'https://api.namefake.com/'
+
+async def get_fakename_asynchronous():
 
     with ThreadPoolExecutor(max_workers=settings.CONCURRENT_REQUESTS_COUNT) as executor:
         with requests.Session() as session:
             session.verify = False
             session.timeout = settings.DEFAULT_TIMEOUT
             loop = asyncio.get_event_loop()
-            tasks = [
-                loop.run_in_executor(
-                    executor,
-                    fetch_fakename,
-                    *(session, base_url)
-                )
-                for _ in range(settings.DEFAULT_REQUESTS_COUNT)
-            ]
-    names_obj_list = list(await asyncio.gather(*tasks))
-    process_names(names_obj_list)
+            tasks = create_asynchronous_tasks(loop, fetch_fakename, executor,
+                 session, settings.BASE_URL)
+    return list(await asyncio.gather(*tasks))
 
 
 def process_names(names_obj_list):
@@ -98,6 +100,8 @@ def main():
     loop = asyncio.get_event_loop()
     future = asyncio.ensure_future(get_fakename_asynchronous())
     loop.run_until_complete(future)
+    names_obj_list = future.result()
+    process_names(names_obj_list)
 
 
 if __name__ == '__main__':

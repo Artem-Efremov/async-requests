@@ -6,3 +6,5 @@ FAILED_LOAD_RETRIES = 5
 FAILED_LOAD_DELAY = 0.5
 
 MOST_COMMON_WORDS_COUNT = 10
+
+BASE_URL = 'https://api.namefake.com/'
