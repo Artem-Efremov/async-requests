@@ -60,7 +60,6 @@ def create_asynchronous_tasks(loop, exec_func, executor=None, *args, **kwargs):
 
 
 async def get_fakename_asynchronous():
-
     with ThreadPoolExecutor(max_workers=settings.CONCURRENT_REQUESTS_COUNT) as executor:
         with requests.Session() as session:
             session.verify = False
@@ -68,7 +67,7 @@ async def get_fakename_asynchronous():
             loop = asyncio.get_event_loop()
             tasks = create_asynchronous_tasks(loop, fetch_fakename, executor,
                  session, settings.BASE_URL)
-    return list(await asyncio.gather(*tasks))
+            return await asyncio.gather(*tasks)
 
 
 def process_names(names_obj_list):
