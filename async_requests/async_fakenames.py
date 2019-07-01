@@ -18,17 +18,31 @@ from json.decoder import JSONDecodeError
 from requests.exceptions import ConnectionError
 
 
+def get_response(session, url):
+    with session.get(url) as response:
+        if response.status_code == 200:
+            return response
+
+
+def is_valid_json_response(response):
+    try:
+        return response and response.json().get('name')
+    except JSONDecodeError as e:
+        print('FAILED:: {}'.format(e))
+        return False
+
+
 def fetch_fakename(session, url):
     name_obj = FakeName(start=default_timer())
     for _ in range(int(settings.FAILED_LOAD_RETRIES)): # Restart if request was failed
         name_obj.retries += 1
         try:
-            with session.get(url) as response:
-                if response.status_code == 200:
-                    name_obj.fullname = response.json().get('name')
-                    name_obj.name_received_time = default_timer()
-                    return name_obj
-        except (ConnectionError, JSONDecodeError) as e:
+            response = get_response(session, url)
+            if is_valid_json_response(response):
+                name_obj.fullname = response.json().get('name')
+                name_obj.name_received_time = default_timer()
+                return name_obj
+        except ConnectionError as e:
             print('FAILED:: {}'.format(e))
         finally:
             time.sleep(settings.FAILED_LOAD_DELAY)
@@ -91,6 +105,7 @@ if __name__ == '__main__':
     DEFAULT_OUTPUT = 'outputs/timed_output_{0}.txt'.format(time.strftime('%Y-%m-%d_%H-%M-%S'))
 
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
     with open(DEFAULT_OUTPUT, 'a') as output:
         elapsed = '{:5.2f}s'.format(
             timeit('main()', 'from __main__ import main', number=1))
